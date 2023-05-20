@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 
-import { Action, deviceRegister } from "./actions";
+import { Action, deviceRegister, deviceUpdate } from "./actions";
 import { emitter, logger, prisma } from "./modules";
 
 export class Application {
@@ -8,6 +8,7 @@ export class Application {
 
   async setup() {
     emitter.on(Action.DEVICE_REGISTER, deviceRegister);
+    emitter.on(Action.DEVICE_UPDATE, deviceUpdate);
   }
 
   async connect() {
@@ -22,6 +23,12 @@ export class Application {
     this.mqtt = mqtt.connect(mqttURL);
 
     this.mqtt.on("connect", () => logger.info("MQTT connected"));
+    
+    this.mqtt.on("disconnect", () => {
+      logger.info("MQTT disconnected");
+
+      this.mqtt?.reconnect();
+    });
 
     this.mqtt.subscribe(mqttTopic, (err) => {
       if (err) {

@@ -3,6 +3,7 @@
   "payload": {
     "code": "de_12345",
     "name": "lampada01",
-    "location": "sala"
+    "location": "sala",
+    "state": "ON"
   }
 }

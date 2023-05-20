@@ -1,0 +1,7 @@
+{
+  "action": "device.update",
+  "payload": {
+    "code": "de_12345",
+    "state": "OFF"
+  }
+}
