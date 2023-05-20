@@ -1,57 +1,58 @@
-import mqtt from "mqtt";
+import MQTT from "mqtt";
 
-import { Action, deviceRegister, deviceUpdate } from "./actions";
-import { emitter, logger, prisma } from "./modules";
+import { Action, actionSchema, deviceRegister, deviceUpdate } from "./actions";
+import { emitter, logger } from "./modules";
 
 export class Application {
-  private mqtt?: mqtt.Client;
+  private mqtt: MQTT.MqttClient;
 
-  async setup() {
+  constructor() {
+    if (!process.env.MQTT_URL) {
+      throw new Error("MQTT url is not defined");
+    }
+
+    this.mqtt = MQTT.connect(process.env.MQTT_URL);
+  }
+
+  private actions() {
     emitter.on(Action.DEVICE_REGISTER, deviceRegister);
     emitter.on(Action.DEVICE_UPDATE, deviceUpdate);
   }
 
-  async connect() {
-    const mqttURL = process.env.MQTT_URL;
-    const mqttTopic = process.env.MQTT_TOPIC;
+  async start() {
+    this.actions();
 
-    if (!mqttURL || !mqttTopic) {
-      throw new Error("MQTT url or topic is not defined");
+    if (!process.env.MQTT_TOPIC) {
+      throw new Error("MQTT topic is not defined");
     }
 
-    await prisma.$connect();
-    this.mqtt = mqtt.connect(mqttURL);
-
     this.mqtt.on("connect", () => logger.info("MQTT connected"));
-    
-    this.mqtt.on("disconnect", () => {
-      logger.info("MQTT disconnected");
 
-      this.mqtt?.reconnect();
+    this.mqtt.on("disconnect", () => {
+      logger.error("MQTT disconnected");
+
+      this.mqtt.reconnect();
     });
 
-    this.mqtt.subscribe(mqttTopic, (err) => {
+    this.mqtt.subscribe(process.env.MQTT_TOPIC, (err) => {
       if (err) {
         throw err;
       }
 
-      logger.info(mqttTopic, "MQTT subscribed");
+      logger.info(process.env.MQTT_TOPIC, "MQTT subscribed");
     });
-  }
-
-  async start() {
-    await this.setup();
-    await this.connect();
-
-    if (!this.mqtt) {
-      throw new Error("MQTT is not connected");
-    }
 
     this.mqtt.on("message", (topic, message) => {
       const { action, payload } = JSON.parse(message.toString());
 
       if (!action || !payload) {
-        throw new Error("MQTT action or payload is not defined");
+        logger.error("MQTT action or payload is not defined");
+        return;
+      }
+
+      if (!actionSchema.safeParse(action).success) {
+        logger.error("MQTT action is not valid");
+        return;
       }
 
       logger.info(
