@@ -1,17 +1,11 @@
-import MQTT from "mqtt";
-
 import { Action, actionSchema, deviceRegister, deviceUpdate } from "./actions";
-import { emitter, logger } from "./modules";
+import { emitter, mqtt } from "./modules";
 
 export class Application {
-  private mqtt: MQTT.MqttClient;
+  private readonly topic: string;
 
   constructor() {
-    if (!process.env.MQTT_URL) {
-      throw new Error("MQTT url is not defined");
-    }
-
-    this.mqtt = MQTT.connect(process.env.MQTT_URL);
+    this.topic = process.env.MQTT_TOPIC_SUB!;
   }
 
   private actions() {
@@ -22,40 +16,29 @@ export class Application {
   async start() {
     this.actions();
 
-    if (!process.env.MQTT_TOPIC) {
-      throw new Error("MQTT topic is not defined");
-    }
-
-    this.mqtt.on("connect", () => logger.info("MQTT connected"));
-
-    this.mqtt.on("disconnect", () => {
-      logger.error("MQTT disconnected");
-
-      this.mqtt.reconnect();
-    });
-
-    this.mqtt.subscribe(process.env.MQTT_TOPIC, (err) => {
+    mqtt.subscribe(this.topic, (err) => {
       if (err) {
         throw err;
       }
 
-      logger.info(process.env.MQTT_TOPIC, "MQTT subscribed");
+      console.info(this.topic, "MQTT subscribed");
     });
 
-    this.mqtt.on("message", (topic, message) => {
+    mqtt.on("message", (topic, message) => {
+      console.log("message", message.toString());
       const { action, payload } = JSON.parse(message.toString());
 
       if (!action || !payload) {
-        logger.error("MQTT action or payload is not defined");
+        console.error("MQTT action or payload is not defined");
         return;
       }
 
       if (!actionSchema.safeParse(action).success) {
-        logger.error("MQTT action is not valid");
+        console.error("MQTT action is not valid");
         return;
       }
 
-      logger.info(
+      console.info(
         {
           topic,
           action,

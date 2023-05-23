@@ -1,7 +1,7 @@
 import { State } from "@prisma/client";
 import { z } from "zod";
 
-import { logger, prisma } from "../modules";
+import { prisma } from "../modules";
 
 const schema = z.object({
   code: z.string(),
@@ -13,8 +13,9 @@ const schema = z.object({
 type DeviceRegisterPayload = z.infer<typeof schema>;
 
 export async function deviceRegister(payload: DeviceRegisterPayload) {
-  logger.info("device.register");
+  const action = "device.register";
 
+  console.info(action);
   schema.parse(payload);
 
   await prisma.device.create({

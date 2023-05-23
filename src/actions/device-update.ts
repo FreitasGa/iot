@@ -1,7 +1,7 @@
 import { State } from "@prisma/client";
 import { z } from "zod";
 
-import { logger, prisma } from "../modules";
+import { prisma } from "../modules";
 
 const schema = z.object({
   code: z.string(),
@@ -11,8 +11,9 @@ const schema = z.object({
 type DeviceUpdatePayload = z.infer<typeof schema>;
 
 export async function deviceUpdate(payload: DeviceUpdatePayload) {
-  logger.info("device.update");
+  const action = "device.update";
 
+  console.info(action);
   schema.parse(payload);
 
   await prisma.device.update({
