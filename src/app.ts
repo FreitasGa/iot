@@ -1,6 +1,6 @@
 import { Action, actionSchema, deviceRegister, deviceUpdate } from "./actions";
 import { emitter, mqtt } from "./modules";
-
+import { WebSocketServer } from "ws";
 export class Application {
   private readonly topic: string;
 
@@ -16,38 +16,31 @@ export class Application {
   async start() {
     this.actions();
 
-    mqtt.subscribe(this.topic, (err) => {
+    const wss = new WebSocketServer({ port: 8080 });
+
+    mqtt.subscribe("ldr", (err) => {
       if (err) {
         throw err;
       }
-
-      console.info(this.topic, "MQTT subscribed");
     });
 
-    mqtt.on("message", (topic, message) => {
-      console.log("message", message.toString());
-      const { action, payload } = JSON.parse(message.toString());
+    wss.on("connection", (socket) => {
+      console.log("connected");
 
-      if (!action || !payload) {
-        console.error("MQTT action or payload is not defined");
-        return;
-      }
+      mqtt.on("message", (topic, message) => {
+        const { deviceName, value } = JSON.parse(message.toString());
 
-      if (!actionSchema.safeParse(action).success) {
-        console.error("MQTT action is not valid");
-        return;
-      }
+        console.info(
+          {
+            topic,
+            deviceName,
+            value,
+          },
+          "MQTT message received"
+        );
 
-      console.info(
-        {
-          topic,
-          action,
-          payload,
-        },
-        "MQTT message received"
-      );
-
-      emitter.emit(action, payload);
+        socket.send(JSON.stringify({ deviceName, value }));
+      });
     });
   }
 }
