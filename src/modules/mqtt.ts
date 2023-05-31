@@ -1,5 +1,8 @@
 import MQTT from "mqtt";
-export const mqtt = MQTT.connect('mqtts://pelxaqsb:pelxaqsb:qxVHTlGUoDZ2csC7ejikmlmHFywHH25d@jackal.rmq.cloudamqp.com');
+export const mqtt = MQTT.connect(process.env.MQTT_URL!);
+
+console.log('aqui', process.env.MQTT_URL);
+
 
 mqtt.on("connect", () => console.info("MQTT connected"));
 

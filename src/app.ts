@@ -2,11 +2,7 @@ import { Action, actionSchema, deviceRegister, deviceUpdate } from "./actions";
 import { emitter, mqtt } from "./modules";
 import { WebSocketServer } from "ws";
 export class Application {
-  private readonly topic: string;
-
-  constructor() {
-    this.topic = process.env.MQTT_TOPIC_SUB!;
-  }
+  constructor() {}
 
   private actions() {
     emitter.on(Action.DEVICE_REGISTER, deviceRegister);
@@ -18,28 +14,27 @@ export class Application {
 
     const wss = new WebSocketServer({ port: 8080 });
 
-    mqtt.subscribe("ldr", (err) => {
+    mqtt.subscribe(process.env.MQTT_LED_TOPIC!, (err) => {
+
       if (err) {
         throw err;
       }
     });
 
     wss.on("connection", (socket) => {
-      console.log("connected");
-
       mqtt.on("message", (topic, message) => {
-        const { deviceName, value } = JSON.parse(message.toString());
+        const { code, value } = JSON.parse(message.toString());
 
         console.info(
           {
             topic,
-            deviceName,
+            code,
             value,
           },
           "MQTT message received"
         );
 
-        socket.send(JSON.stringify({ deviceName, value }));
+        socket.send(JSON.stringify({ code, value }));
       });
     });
   }
