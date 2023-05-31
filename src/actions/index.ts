@@ -1,3 +1,3 @@
-export { deviceRegister } from "./device-register";
-export { deviceUpdate } from "./device-update";
-export { Action, actionSchema } from "./enum";
+export { devices } from "./devices";
+export { ldr } from "./ldr";
+export { led } from "./led";

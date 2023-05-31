@@ -7,17 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum State {
-  ON
-  OFF
-}
-
 model Device {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   code      String   @unique
   name      String
-  location  String
-  state     State
+  position  String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

@@ -5,12 +5,7 @@ dotenv.config();
 
 async function main() {
   try {
-    if (
-      !process.env.DATABASE_URL ||
-      !process.env.MQTT_URL ||
-      !process.env.MQTT_TOPIC_SUB ||
-      !process.env.MQTT_TOPIC_PUB
-    ) {
+    if (!process.env.DATABASE_URL || !process.env.MQTT_URL) {
       throw new Error("Environment variables are not defined");
     }
 

@@ -1,53 +1,52 @@
-import { Action, actionSchema, deviceRegister, deviceUpdate } from "./actions";
+import { devices, ldr, led } from "./actions";
 import { emitter, mqtt } from "./modules";
 
+export const LDR_TOPIC = "ldr";
+export const LED_TOPIC = "led";
+export const DEVICES_TOPIC = "devices";
+
 export class Application {
-  private readonly topic: string;
-
-  constructor() {
-    this.topic = process.env.MQTT_TOPIC_SUB!;
-  }
-
   private actions() {
-    emitter.on(Action.DEVICE_REGISTER, deviceRegister);
-    emitter.on(Action.DEVICE_UPDATE, deviceUpdate);
+    emitter.on(LDR_TOPIC, ldr);
+    emitter.on(LED_TOPIC, led);
+    emitter.on(DEVICES_TOPIC, devices);
   }
 
   async start() {
     this.actions();
 
-    mqtt.subscribe(this.topic, (err) => {
+    mqtt.subscribe(DEVICES_TOPIC, (err) => {
       if (err) {
         throw err;
       }
 
-      console.info(this.topic, "MQTT subscribed");
+      console.info("MQTT subscribed", DEVICES_TOPIC);
+    });
+
+    mqtt.subscribe(LDR_TOPIC, (err) => {
+      if (err) {
+        throw err;
+      }
+
+      console.info("MQTT subscribed", LDR_TOPIC);
     });
 
     mqtt.on("message", (topic, message) => {
-      console.log("message", message.toString());
-      const { action, payload } = JSON.parse(message.toString());
+      console.log("Message", message.toString());
 
-      if (!action || !payload) {
-        console.error("MQTT action or payload is not defined");
+      const payload = JSON.parse(message.toString());
+
+      if (!payload) {
+        console.error("MQTT payload is not defined");
         return;
       }
 
-      if (!actionSchema.safeParse(action).success) {
-        console.error("MQTT action is not valid");
-        return;
-      }
+      console.info("MQTT message received", {
+        topic,
+        payload,
+      });
 
-      console.info(
-        {
-          topic,
-          action,
-          payload,
-        },
-        "MQTT message received"
-      );
-
-      emitter.emit(action, payload);
+      emitter.emit(topic, payload);
     });
   }
 }
