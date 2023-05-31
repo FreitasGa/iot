@@ -1,3 +1,4 @@
+import { WebSocketServer } from "ws";
 import { devices, ldr, led } from "./actions";
 import { emitter, mqtt } from "./modules";
 
@@ -15,6 +16,8 @@ export class Application {
   async start() {
     this.actions();
 
+    const wss = new WebSocketServer({ port: 8080 });
+
     mqtt.subscribe(DEVICES_TOPIC, (err) => {
       if (err) {
         throw err;
@@ -31,22 +34,33 @@ export class Application {
       console.info("MQTT subscribed", LDR_TOPIC);
     });
 
-    mqtt.on("message", (topic, message) => {
-      console.log("Message", message.toString());
+    wss.on("connection", (socket) => {
+      mqtt.on("message", (topic, message) => {
+        console.log("Message", message.toString());
 
-      const payload = JSON.parse(message.toString());
+        const payload = JSON.parse(message.toString());
 
-      if (!payload) {
-        console.error("MQTT payload is not defined");
-        return;
-      }
+        if (!payload) {
+          console.error("MQTT payload is not defined");
+          return;
+        }
 
-      console.info("MQTT message received", {
-        topic,
-        payload,
+        console.info("MQTT message received", {
+          topic,
+          payload,
+        });
+
+        emitter.emit(topic, payload);
+
+        if (topic !== DEVICES_TOPIC) {
+          const data = {
+            code: payload.code,
+            value: payload.value,
+          };
+
+          socket.send(JSON.stringify(data));
+        }
       });
-
-      emitter.emit(topic, payload);
     });
   }
 }

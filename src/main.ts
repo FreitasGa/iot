@@ -10,7 +10,9 @@ async function main() {
     }
 
     const app = new Application();
+  
     await app.start();
+
   } catch (err) {
     console.error(err);
     throw err;
