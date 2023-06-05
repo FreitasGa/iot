@@ -36,7 +36,7 @@ export class Application {
 
     wss.on("connection", (socket) => {
       mqtt.on("message", (topic, message) => {
-        console.log("Message", message.toString());
+        console.info("Message", message.toString());
 
         const payload = JSON.parse(message.toString());
 
